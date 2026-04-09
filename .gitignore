@@ -1,0 +1,16 @@
+.env
+
+data/
+*.wav
+
+__pycache__/
+*.pyc
+
+venv/
+.env/
+
+models/
+*.h5
+*.pkl
+
+.DS_Store

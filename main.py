@@ -5,6 +5,7 @@ import numpy as np
 # -----------------------------
 # PREPROCESS
 # -----------------------------
+
 def preprocess(file):
     try:
         audio, sr = librosa.load(file, sr=16000, mono=True)
@@ -107,8 +108,13 @@ def load_crema(path):
 # =============================
 # LOAD DATA
 # =============================
-X_ravdess, y_ravdess = load_ravdess("data/ravdess")
-X_crema, y_crema = load_crema("data/crema")
+from dotenv import load_dotenv
+load_dotenv()
+
+ravdess_path = os.getenv("RAVDESS_PATH")
+crema_path = os.getenv("CREMA_PATH")
+X_ravdess, y_ravdess = load_ravdess(ravdess_path)
+X_crema, y_crema = load_crema(crema_path)
 
 print("RAVDESS:", len(X_ravdess))
 print("CREMA:", len(X_crema))
@@ -137,7 +143,7 @@ X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
 # train
-model = LogisticRegression(max_iter=3000)
+model = LogisticRegression(max_iter=3000, class_weight='balanced')
 model.fit(X_train, y_train)
 
 # =============================
