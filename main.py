@@ -6,10 +6,20 @@ import numpy as np
 # PREPROCESS
 # -----------------------------
 
-def preprocess(file):
+def preprocess(file, duration=3):
     try:
         audio, sr = librosa.load(file, sr=16000, mono=True)
+
+        # FIX LENGTH
+        target_length = duration * sr
+
+        if len(audio) < target_length:
+            audio = np.pad(audio, (0, target_length - len(audio)))
+        else:
+            audio = audio[:target_length]
+
         audio = librosa.util.normalize(audio)
+
         return audio, sr
     except:
         return None, None
@@ -17,8 +27,19 @@ def preprocess(file):
 # FEATURE EXTRACTION (MFCC)
 # -----------------------------
 def extract_features(audio, sr):
-    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13)
-    return np.hstack((mfcc.mean(axis=1), mfcc.std(axis=1)))
+    # MFCC
+    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=100)
+    mfcc_mean = mfcc.mean(axis=1)
+    mfcc_std = mfcc.std(axis=1)
+
+    # Chroma
+    chroma = np.mean(librosa.feature.chroma_stft(y=audio, sr=sr).T, axis=0)
+
+    # Mel Spectrogram
+    mel = np.mean(librosa.feature.melspectrogram(y=audio, sr=sr).T, axis=0)
+
+    # Combine all features
+    return np.hstack((mfcc_mean, mfcc_std, chroma, mel))
 
 # -----------------------------
 # RAVDESS LABEL
@@ -130,12 +151,13 @@ print("Total:", len(X))
 # TRAIN MODEL
 # =============================
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
+#from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 
 # split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,stratify=y)
 
 # scale
 scaler = StandardScaler()
@@ -143,9 +165,16 @@ X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
 # train
-model = LogisticRegression(max_iter=3000, class_weight='balanced')
+#model = LogisticRegression(max_iter=3000, class_weight='balanced')
+model = SVC(kernel='rbf', C=5, gamma='scale', class_weight='balanced')
 model.fit(X_train, y_train)
 
+
+# =============================
+# TRAIN ACCURACY
+# =============================
+y_pred_train = model.predict(X_train)
+print("Train Accuracy:", accuracy_score(y_train, y_pred_train))
 # =============================
 # TEST ACCURACY
 # =============================
@@ -170,10 +199,29 @@ scaler2 = StandardScaler()
 X_ravdess_scaled = scaler2.fit_transform(X_ravdess)
 X_crema_scaled2 = scaler2.transform(X_crema)
 
-model2 = LogisticRegression(max_iter=3000)
+#model2 = LogisticRegression(max_iter=3000)
+model2 = SVC(kernel='rbf', C=5, gamma='scale', class_weight='balanced')
 model2.fit(X_ravdess_scaled, y_ravdess)
 
 y_pred_cross = model2.predict(X_crema_scaled2)
 
 print("Cross Accuracy (Train: RAVDESS → Test: CREMA):",
       accuracy_score(y_crema, y_pred_cross))
+
+
+
+# =============================
+# BONUS: TRAIN ONLY CREMA → TEST Ravdes
+# =============================
+scaler3 = StandardScaler()
+
+X_crema_scaled = scaler3.fit_transform(X_crema)
+X_ravdess_scaled3 = scaler3.transform(X_ravdess)
+
+model3 = SVC(kernel='rbf', C=5, gamma='scale', class_weight='balanced')
+model3.fit(X_crema_scaled, y_crema)
+
+y_pred_cross = model3.predict(X_ravdess_scaled3)
+
+print("Cross Accuracy (Train: CREMA → Test: RAVDESS):",
+      accuracy_score(y_ravdess, y_pred_cross))
