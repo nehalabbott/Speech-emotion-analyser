@@ -594,3 +594,11 @@ for r in results:
 
 
 print("\nDone.")
+
+import joblib
+
+# Add this to the very bottom of main.py
+print("Saving model and scaler...")
+joblib.dump(model, 'emotion_model.pkl')
+joblib.dump(scaler, 'scaler.pkl')
+print("Saved successfully!")
