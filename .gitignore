@@ -18,3 +18,4 @@ models/
 
 *.png
 main2.py
+/feature_cache

@@ -2,6 +2,9 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 
+CACHE_DIR = "feature_cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
+
 import librosa
 import numpy as np
 import matplotlib.pyplot as plt
@@ -408,20 +411,66 @@ def evaluate_model(
 # =========================================================
 print("\nPrecomputing raw feature sequences...\n")
 
-X_rav_raw, y_rav, g_rav = load_raw_sequences(
-    RAVDESS_PATH,
-    "ravdess"
+
+cache_file = os.path.join(
+    CACHE_DIR,
+    "raw_features.joblib"
 )
 
-X_cre_raw, y_cre, g_cre = load_raw_sequences(
-    CREMA_PATH,
-    "crema"
-)
+if os.path.exists(cache_file):
 
-X_tess_raw, y_tess, g_tess = load_raw_sequences(
-    TESS_PATH,
-    "tess"
-)
+    print("Loading cached raw features...\n")
+
+    data = joblib.load(cache_file)
+
+    X_rav_raw = data["X_rav_raw"]
+    y_rav = data["y_rav"]
+    g_rav = data["g_rav"]
+
+    X_cre_raw = data["X_cre_raw"]
+    y_cre = data["y_cre"]
+    g_cre = data["g_cre"]
+
+    X_tess_raw = data["X_tess_raw"]
+    y_tess = data["y_tess"]
+    g_tess = data["g_tess"]
+
+else:
+
+    print("Computing raw features...\n")
+
+    X_rav_raw, y_rav, g_rav = load_raw_sequences(
+        RAVDESS_PATH,
+        "ravdess"
+    )
+
+    X_cre_raw, y_cre, g_cre = load_raw_sequences(
+        CREMA_PATH,
+        "crema"
+    )
+
+    X_tess_raw, y_tess, g_tess = load_raw_sequences(
+        TESS_PATH,
+        "tess"
+    )
+
+    joblib.dump({
+        "X_rav_raw": X_rav_raw,
+        "y_rav": y_rav,
+        "g_rav": g_rav,
+
+        "X_cre_raw": X_cre_raw,
+        "y_cre": y_cre,
+        "g_cre": g_cre,
+
+        "X_tess_raw": X_tess_raw,
+        "y_tess": y_tess,
+        "g_tess": g_tess
+
+    }, cache_file)
+
+    print("Features cached successfully!\n")
+
 
 # =========================================================
 # APPLY DEFAULT POOLING

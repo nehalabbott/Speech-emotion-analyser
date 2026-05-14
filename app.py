@@ -16,25 +16,69 @@ model, scaler = load_model()
 
 # --- 2. MATCHING FEATURE EXTRACTION (Synced with main.py) ---
 def extract_features(audio, sr):
-    # Extract raw sequences exactly as main.py does
-    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=40)
-    delta_mfcc = librosa.feature.delta(mfcc)
-    chroma = librosa.feature.chroma_stft(y=audio, sr=sr)
-    mel = librosa.feature.melspectrogram(y=audio, sr=sr)
-    rms = librosa.feature.rms(y=audio)
-    zcr = librosa.feature.zero_crossing_rate(audio)
-    spectral_contrast = librosa.feature.spectral_contrast(y=audio, sr=sr)
 
-    # Stack them
+    # MFCC
+    mfcc = librosa.feature.mfcc(
+        y=audio,
+        sr=sr,
+        n_mfcc=40
+    )
+
+    # DELTA
+    delta_mfcc = librosa.feature.delta(mfcc)
+
+    # DELTA-DELTA
+    delta2_mfcc = librosa.feature.delta(
+        mfcc,
+        order=2
+    )
+
+    # CHROMA
+    chroma = librosa.feature.chroma_stft(
+        y=audio,
+        sr=sr,
+        n_chroma=12
+    )
+
+    # LOG MEL
+    mel = librosa.power_to_db(
+        librosa.feature.melspectrogram(
+            y=audio,
+            sr=sr
+        ),
+        ref=np.max
+    )
+
+    # RMS
+    rms = librosa.feature.rms(y=audio)
+
+    # ZCR
+    zcr = librosa.feature.zero_crossing_rate(audio)
+
+    # SPECTRAL CONTRAST
+    spectral_contrast = librosa.feature.spectral_contrast(
+        y=audio,
+        sr=sr
+    )
+
+    # STACK FEATURES
     sequence = np.vstack((
-        mfcc, delta_mfcc, chroma, mel, rms, zcr, spectral_contrast
+        mfcc,
+        delta_mfcc,
+        delta2_mfcc,
+        chroma,
+        mel,
+        rms,
+        zcr,
+        spectral_contrast
     ))
 
-    # Apply "mean+std" pooling
+    # MEAN + STD POOLING
     pooled = np.hstack((
         np.mean(sequence, axis=1),
         np.std(sequence, axis=1)
     ))
+
     return pooled
 
 def preprocess(file_path, duration=3):
