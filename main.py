@@ -26,6 +26,7 @@ load_dotenv()
 
 RAVDESS_PATH = os.getenv("RAVDESS_PATH")
 CREMA_PATH = os.getenv("CREMA_PATH")
+TESS_PATH = os.getenv("TESS_PATH")
 
 # =========================================================
 # COMMON LABEL SET
@@ -191,6 +192,31 @@ def get_speaker_crema(filename):
 
 
 # =========================================================
+# TESS LABELING
+# =========================================================
+def get_label_tess(filename):
+
+    emotion = filename.split("_")[-1].split(".")[0]
+
+    mapping = {
+        "angry": "angry",
+        "happy": "happy",
+        "sad": "sad",
+        "neutral": "neutral",
+        "fear": "fear",
+        "disgust": "disgust",
+        "ps": None   # pleasant surprise removed
+    }
+
+    return mapping.get(emotion)
+
+
+def get_speaker_tess(filename):
+
+    # OAF or YAF
+    return filename.split("_")[0]
+
+# =========================================================
 # LOAD RAVDESS
 # =========================================================
 def load_ravdess(path, pooling="mean+std"):
@@ -227,6 +253,42 @@ def load_ravdess(path, pooling="mean+std"):
 
     return np.array(X), np.array(y), np.array(groups)
 
+# =========================================================
+# LOAD TESS
+# =========================================================
+def load_tess(path, pooling="mean+std"):
+
+    X, y, groups = [], [], []
+
+    for root, _, files in os.walk(path):
+
+        for file in files:
+
+            if file.endswith(".wav"):
+
+                label = get_label_tess(file)
+
+                if label not in COMMON_EMOTIONS:
+                    continue
+
+                full_path = os.path.join(root, file)
+
+                audio, sr = preprocess(full_path)
+
+                if audio is None:
+                    continue
+
+                raw_seq = extract_raw_sequences(audio, sr)
+
+                pooled = apply_pooling(raw_seq, pooling)
+
+                speaker = get_speaker_tess(file)
+
+                X.append(pooled)
+                y.append(label)
+                groups.append(speaker)
+
+    return np.array(X), np.array(y), np.array(groups)
 
 # =========================================================
 # LOAD CREMA-D
@@ -366,19 +428,34 @@ X_cre, y_cre, g_cre = load_crema(
     CREMA_PATH,
     pooling="mean+std"
 )
+X_tess, y_tess, g_tess = load_tess(
+    TESS_PATH,
+    pooling="mean+std"
+)
 
+print(f"TESS Samples : {len(X_tess)}")
 print(f"RAVDESS Samples : {len(X_rav)}")
 print(f"CREMA-D Samples : {len(X_cre)}")
 
 # =========================================================
 # COMBINE DATASETS
 # =========================================================
-X_all = np.vstack((X_rav, X_cre))
-y_all = np.hstack((y_rav, y_cre))
+X_all = np.vstack((
+    X_rav,
+    X_cre,
+    X_tess
+))
+
+y_all = np.hstack((
+    y_rav,
+    y_cre,
+    y_tess
+))
 
 groups_all = np.hstack((
     ["rav_" + g for g in g_rav],
-    ["cre_" + g for g in g_cre]
+    ["cre_" + g for g in g_cre],
+    ["tess_" + g for g in g_tess]
 ))
 
 print(f"Total Samples : {len(X_all)}")
@@ -437,55 +514,123 @@ evaluate_model(
 
 # =========================================================
 # TASK 2:
-# CROSS DATASET GENERALIZATION
+# LEAVE-ONE-DATASET-OUT CROSS DATASET EVALUATION
 # =========================================================
 
-# ---------------------------------------------------------
-# TRAIN ON RAVDESS -> TEST ON CREMA
-# ---------------------------------------------------------
-sc_rav = StandardScaler()
+print("\nStarting Task 2: Cross Dataset Generalization\n")
 
-X_rav_scaled = sc_rav.fit_transform(X_rav)
-X_cre_scaled = sc_rav.transform(X_cre)
+# =========================================================
+# EXPERIMENT 1
+# TRAIN: CREMA + TESS
+# TEST : RAVDESS
+# =========================================================
 
-model_rav = LinearSVC(
+print("\n" + "="*60)
+print("Train: CREMA + TESS -> Test: RAVDESS")
+print("="*60)
+
+X_train = np.vstack((X_cre, X_tess))
+y_train = np.hstack((y_cre, y_tess))
+
+X_test = X_rav
+y_test = y_rav
+
+scaler = StandardScaler()
+
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+model = LinearSVC(
     class_weight="balanced",
     random_state=42,
     max_iter=10000
 )
 
-model_rav.fit(X_rav_scaled, y_rav)
+model.fit(X_train_scaled, y_train)
 
 evaluate_model(
-    model_rav,
-    X_cre_scaled,
-    y_cre,
-    "Train: RAVDESS -> Test: CREMA-D",
-    "cm_rav_to_cre.png"
+    model,
+    X_test_scaled,
+    y_test,
+    "Train: CREMA+TESS -> Test: RAVDESS",
+    "cm_cre_tess_to_rav.png"
 )
 
-# TRAIN ON CREMA -> TEST ON RAVDESS
-sc_cre = StandardScaler()
 
-X_cre_scaled = sc_cre.fit_transform(X_cre)
-X_rav_scaled = sc_cre.transform(X_rav)
+# =========================================================
+# EXPERIMENT 2
+# TRAIN: RAVDESS + TESS
+# TEST : CREMA
+# =========================================================
 
-model_cre = LinearSVC(
+print("\n" + "="*60)
+print("Train: RAVDESS + TESS -> Test: CREMA")
+print("="*60)
+
+X_train = np.vstack((X_rav, X_tess))
+y_train = np.hstack((y_rav, y_tess))
+
+X_test = X_cre
+y_test = y_cre
+
+scaler = StandardScaler()
+
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+model = LinearSVC(
     class_weight="balanced",
     random_state=42,
     max_iter=10000
 )
 
-model_cre.fit(X_cre_scaled, y_cre)
+model.fit(X_train_scaled, y_train)
 
 evaluate_model(
-    model_cre,
-    X_rav_scaled,
-    y_rav,
-    "Train: CREMA-D -> Test: RAVDESS",
-    "cm_cre_to_rav.png"
+    model,
+    X_test_scaled,
+    y_test,
+    "Train: RAVDESS+TESS -> Test: CREMA",
+    "cm_rav_tess_to_cre.png"
 )
 
+
+# =========================================================
+# EXPERIMENT 3
+# TRAIN: RAVDESS + CREMA
+# TEST : TESS
+# =========================================================
+
+print("\n" + "="*60)
+print("Train: RAVDESS + CREMA -> Test: TESS")
+print("="*60)
+
+X_train = np.vstack((X_rav, X_cre))
+y_train = np.hstack((y_rav, y_cre))
+
+X_test = X_tess
+y_test = y_tess
+
+scaler = StandardScaler()
+
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+model = LinearSVC(
+    class_weight="balanced",
+    random_state=42,
+    max_iter=10000
+)
+
+model.fit(X_train_scaled, y_train)
+
+evaluate_model(
+    model,
+    X_test_scaled,
+    y_test,
+    "Train: RAVDESS+CREMA -> Test: TESS",
+    "cm_rav_cre_to_tess.png"
+)
 # =========================================================
 # TASK 3:
 # POOLING EXPERIMENTS
