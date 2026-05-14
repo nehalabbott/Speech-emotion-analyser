@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from dotenv import load_dotenv
+import joblib
 
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.preprocessing import StandardScaler
@@ -393,7 +394,7 @@ def evaluate_model(
         average="macro"
     )
 
-   
+    
     print(experiment_name)
 
     print(f"Accuracy : {accuracy:.4f}")
@@ -500,6 +501,15 @@ model = LinearSVC(
 )
 
 model.fit(X_train, y_train)
+
+# ---------------------------------------------------------
+# SAVE MODEL & SCALER HERE
+# ---------------------------------------------------------
+print("Saving main model and scaler for the web app...")
+joblib.dump(model, 'emotion_model.pkl')
+joblib.dump(scaler, 'scaler.pkl')
+print("Saved successfully!\n")
+# ---------------------------------------------------------
 
 # =========================================================
 # EVALUATE
@@ -739,11 +749,3 @@ for r in results:
 
 
 print("\nDone.")
-
-import joblib
-
-# Add this to the very bottom of main.py
-print("Saving model and scaler...")
-joblib.dump(model, 'emotion_model.pkl')
-joblib.dump(scaler, 'scaler.pkl')
-print("Saved successfully!")
