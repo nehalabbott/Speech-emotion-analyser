@@ -114,26 +114,24 @@ if uploaded_file is not None:
                 temp_audio.write(uploaded_file.read())
                 temp_filepath = temp_audio.name
             
-            # Process the file
+            #process the file
             audio, sr = preprocess(temp_filepath)
             
             if audio is not None:
                 features = extract_features(audio, sr)
                 
-                # Scale the features
+                #scale the features
                 features_scaled = scaler.transform([features])
                 
-                # Predict
                 prediction = model.predict(features_scaled)[0]
                 
-                # Update emojis to match your COMMON_EMOTIONS list
                 emotion_emojis = {
-                    "angry": "😡 Angry", 
-                    "happy": "😄 Happy", 
-                    "sad": "😢 Sad", 
-                    "neutral": "😐 Neutral", 
-                    "fear": "😨 Fear", 
-                    "disgust": "🤢 Disgust"
+                    "angry": "Angry", 
+                    "happy": "Happy", 
+                    "sad": "Sad", 
+                    "neutral": "Neutral", 
+                    "fear": "Fear", 
+                    "disgust": "Disgust"
                 }
                 
                 display_text = emotion_emojis.get(prediction, prediction.capitalize())
