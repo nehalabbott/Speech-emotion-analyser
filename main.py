@@ -26,18 +26,13 @@ from sklearn.metrics import (
     confusion_matrix
 )
 
-# =========================================================
-# LOAD ENV VARIABLES
-# =========================================================
+#load env var
 load_dotenv()
 
 RAVDESS_PATH = os.getenv("RAVDESS_PATH")
 CREMA_PATH = os.getenv("CREMA_PATH")
 TESS_PATH = os.getenv("TESS_PATH")
 
-# =========================================================
-# COMMON LABELS
-# =========================================================
 COMMON_EMOTIONS = [
     "angry",
     "happy",
@@ -47,9 +42,7 @@ COMMON_EMOTIONS = [
     "disgust"
 ]
 
-# =========================================================
-# PREPROCESSING
-# =========================================================
+#preprocessing
 def preprocess(file_path, duration=3):
 
     try:
@@ -61,7 +54,6 @@ def preprocess(file_path, duration=3):
 
         target_length = duration * sr
 
-        # FIX LENGTH
         if len(audio) < target_length:
 
             audio = np.pad(
@@ -72,7 +64,7 @@ def preprocess(file_path, duration=3):
         else:
             audio = audio[:target_length]
 
-        # NORMALIZE
+        #normalize
         audio = librosa.util.normalize(audio)
 
         return audio, sr
@@ -84,35 +76,31 @@ def preprocess(file_path, duration=3):
         return None, None
 
 
-# =========================================================
-# FEATURE EXTRACTION
-# =========================================================
+#feature extraction
 def extract_raw_sequences(audio, sr):
 
-    # MFCC
+    #mfcc
     mfcc = librosa.feature.mfcc(
         y=audio,
         sr=sr,
         n_mfcc=40
     )
 
-    # DELTA
     delta_mfcc = librosa.feature.delta(mfcc)
 
-    # DELTA-DELTA
     delta2_mfcc = librosa.feature.delta(
         mfcc,
         order=2
     )
 
-    # CHROMA
+    #chroma
     chroma = librosa.feature.chroma_stft(
         y=audio,
         sr=sr,
         n_chroma=12
     )
 
-    # LOG MEL
+    #log mel
     mel = librosa.power_to_db(
         librosa.feature.melspectrogram(
             y=audio,
@@ -121,19 +109,15 @@ def extract_raw_sequences(audio, sr):
         ref=np.max
     )
 
-    # RMS
     rms = librosa.feature.rms(y=audio)
 
-    # ZCR
     zcr = librosa.feature.zero_crossing_rate(audio)
 
-    # SPECTRAL CONTRAST
     spectral_contrast = librosa.feature.spectral_contrast(
         y=audio,
         sr=sr
     )
 
-    # STACK FEATURES
     return np.vstack((
         mfcc,
         delta_mfcc,
@@ -146,9 +130,7 @@ def extract_raw_sequences(audio, sr):
     ))
 
 
-# =========================================================
-# POOLING
-# =========================================================
+#pooling
 def apply_pooling(sequence, pool_type):
 
     if pool_type == "mean":
@@ -174,10 +156,7 @@ def apply_pooling(sequence, pool_type):
 
         raise ValueError("Invalid pooling method")
 
-
-# =========================================================
-# LABEL FUNCTIONS
-# =========================================================
+#label functions
 def get_label_ravdess(filename):
 
     code = filename.split("-")[2]
@@ -242,9 +221,7 @@ def get_speaker_tess(filename):
     return filename.split("_")[0]
 
 
-# =========================================================
-# RAW FEATURE LOADER
-# =========================================================
+#raw feature loader
 def load_raw_sequences(path, dataset_type):
 
     X_raw = []
@@ -258,7 +235,6 @@ def load_raw_sequences(path, dataset_type):
             if not file.endswith(".wav"):
                 continue
 
-            # LABELS
             if dataset_type == "ravdess":
 
                 label = get_label_ravdess(file)
@@ -280,7 +256,6 @@ def load_raw_sequences(path, dataset_type):
             if label not in COMMON_EMOTIONS:
                 continue
 
-            # AUDIO
             full_path = os.path.join(root, file)
 
             audio, sr = preprocess(full_path)
@@ -288,7 +263,6 @@ def load_raw_sequences(path, dataset_type):
             if audio is None:
                 continue
 
-            # FEATURES
             raw_seq = extract_raw_sequences(audio, sr)
 
             X_raw.append(raw_seq)
@@ -301,10 +275,7 @@ def load_raw_sequences(path, dataset_type):
         np.array(groups)
     )
 
-
-# =========================================================
-# DATASET LOADER
-# =========================================================
+#dataset loader
 def load_dataset(raw_sequences, labels, groups, pooling):
 
     X = []
@@ -321,10 +292,7 @@ def load_dataset(raw_sequences, labels, groups, pooling):
         groups
     )
 
-
-# =========================================================
-# CONFUSION MATRIX
-# =========================================================
+#confusion matrix
 def plot_confusion_matrix(
     y_true,
     y_pred,
@@ -365,10 +333,7 @@ def plot_confusion_matrix(
 
     print(f"Saved confusion matrix: {filename} \n")
 
-
-# =========================================================
-# EVALUATION
-# =========================================================
+#evaluation
 def evaluate_model(
     model,
     X_test,
@@ -390,11 +355,8 @@ def evaluate_model(
         average="macro"
     )
 
-   # print(experiment_name)
-
     print(f"Accuracy : {accuracy:.4f}")
     print(f"Macro F1 : {macro_f1:.4f}")
-   # print()
 
     plot_confusion_matrix(
         y_test,
@@ -405,10 +367,7 @@ def evaluate_model(
 
     return accuracy, macro_f1
 
-
-# =========================================================
-# PRECOMPUTE FEATURES
-# =========================================================
+#precompute features
 print("\nPrecomputing raw feature sequences...\n")
 
 
@@ -471,10 +430,7 @@ else:
 
     print("Features cached successfully!\n")
 
-
-# =========================================================
-# APPLY DEFAULT POOLING
-# =========================================================
+#apply default pooling
 X_rav, y_rav, g_rav = load_dataset(
     X_rav_raw,
     y_rav,
@@ -500,9 +456,7 @@ print(f"TESS Samples : {len(X_tess)}")
 print(f"RAVDESS Samples : {len(X_rav)}")
 print(f"CREMA-D Samples : {len(X_cre)}")
 
-# =========================================================
-# COMBINE DATASETS
-# =========================================================
+#combine datasets
 X_all = np.vstack((
     X_rav,
     X_cre,
@@ -524,10 +478,7 @@ groups_all = np.hstack((
 print(f"Total Samples : {len(X_all)}")
 print()
 
-# =========================================================
-# TASK 1
-# MIXED DATASET SPEAKER-INDEPENDENT
-# =========================================================
+#mixed dataset
 gss = GroupShuffleSplit(
     test_size=0.2,
     n_splits=1,
@@ -544,13 +495,11 @@ X_test = X_all[test_idx]
 y_train = y_all[train_idx]
 y_test = y_all[test_idx]
 
-# SCALE
 scaler = StandardScaler()
 
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 
-# MODEL
 model = LinearSVC(
     class_weight="balanced",
     random_state=42,
@@ -559,14 +508,13 @@ model = LinearSVC(
 
 model.fit(X_train, y_train)
 
-# SAVE
 print("Saving main model and scaler...")
 
 joblib.dump(model, "emotion_model.pkl")
 joblib.dump(scaler, "scaler.pkl")
 
 
-# TRAIN METRICS
+#train metrics
 y_pred_train = model.predict(X_train)
 
 train_acc = accuracy_score(
@@ -585,7 +533,7 @@ print(f"Train Accuracy : {train_acc:.4f}")
 print(f"Train Macro F1 : {train_f1:.4f}")
 print()
 
-# TEST METRICS
+#test metrics
 print("TEST RESULTS")
 
 evaluate_model(
@@ -624,13 +572,11 @@ def same_dataset_evaluation(
     y_train = y[train_idx]
     y_test = y[test_idx]
 
-    # SCALE
     scaler = StandardScaler()
 
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    # MODEL
     model = LinearSVC(
         class_weight="balanced",
         random_state=42,
@@ -639,7 +585,6 @@ def same_dataset_evaluation(
 
     model.fit(X_train, y_train)
 
-    # TRAIN
     y_pred_train = model.predict(X_train)
 
     train_acc = accuracy_score(
@@ -647,13 +592,10 @@ def same_dataset_evaluation(
         y_pred_train
     )
 
-
-    #print("TRAIN RESULTS")
     print(f"Train Accuracy : {train_acc:.4f}")
     #print(f"Train Macro F1 : {train_f1:.4f}")
     print()
 
-    # TEST
     y_pred_test = model.predict(X_test)
 
     test_acc = accuracy_score(
@@ -698,10 +640,7 @@ same_dataset_evaluation(
     "cm_tess_same.png"
 )
 
-# =========================================================
-# TASK 2
-# CROSS DATASET
-# =========================================================
+#cross dataset
 print("\nCross Dataset Generalization\n")
 
 experiments = [
@@ -765,11 +704,7 @@ for (
         title,
         cm_name
     )
-
-# =========================================================
-# TASK 3
-# POOLING STUDY
-# =========================================================
+#pooling study
 print("\nPooling Study\n")
 
 pooling_methods = [
@@ -785,7 +720,6 @@ for pool_type in pooling_methods:
 
     print(f"POOLING METHOD: {pool_type.upper()}")
 
-    # APPLY POOLING
     X_rav_pool = np.array([
         apply_pooling(seq, pool_type)
         for seq in X_rav_raw
@@ -819,7 +753,6 @@ for pool_type in pooling_methods:
         ["tess_" + g for g in g_tess]
     ))
 
-    # SPEAKER-INDEPENDENT SPLIT
     gss = GroupShuffleSplit(
         test_size=0.2,
         n_splits=1,
@@ -840,13 +773,11 @@ for pool_type in pooling_methods:
     y_tr = y_pool[train_idx]
     y_te = y_pool[test_idx]
 
-    # SCALE
     scaler = StandardScaler()
 
     X_tr = scaler.fit_transform(X_tr)
     X_te = scaler.transform(X_te)
 
-    # MODEL
     model = LinearSVC(
         class_weight="balanced",
         random_state=42,
@@ -855,10 +786,8 @@ for pool_type in pooling_methods:
 
     model.fit(X_tr, y_tr)
 
-    # PREDICT
     preds = model.predict(X_te)
 
-    # METRICS
     acc = accuracy_score(y_te, preds)
 
     macro_f1 = f1_score(
@@ -884,9 +813,6 @@ for pool_type in pooling_methods:
         f"cm_pool_{pool_type}.png"
     )
 
-# =========================================================
-# FINAL RESULTS
-# =========================================================
 print("FINAL POOLING RESULTS")
 
 for r in results:

@@ -5,7 +5,7 @@ import joblib
 import tempfile
 import os
 
-# --- 1. Load the Model and Scaler ---
+#load model and scaler
 @st.cache_resource 
 def load_model():
     model = joblib.load('emotion_model.pkl')
@@ -14,7 +14,7 @@ def load_model():
 
 model, scaler = load_model()
 
-# --- 2. MATCHING FEATURE EXTRACTION (Synced with main.py) ---
+#matching feature extraction
 def extract_features(audio, sr):
 
     # MFCC
@@ -96,13 +96,12 @@ def preprocess(file_path, duration=3):
         st.error(f"Error processing audio: {e}")
         return None, None
 
-# --- 3. The Streamlit UI ---
+#streamlit ui
 st.set_page_config(page_title="Speech Emotion Analyser", page_icon="🎙️")
 
 st.title("🎙️ Speech Emotion Analyser")
 st.write("Upload a 3-second audio clip to detect the underlying emotion.")
 
-# File Uploader
 uploaded_file = st.file_uploader("Upload a .wav file", type=["wav"])
 
 if uploaded_file is not None:
