@@ -796,19 +796,27 @@ for pool_type in pooling_methods:
         for seq in X_cre_raw
     ])
 
+    X_tess_pool = np.array([
+    apply_pooling(seq, pool_type)
+    for seq in X_tess_raw
+])
+
     X_pool = np.vstack((
         X_rav_pool,
-        X_cre_pool
+        X_cre_pool,
+        X_tess_pool
     ))
 
     y_pool = np.hstack((
         y_rav,
-        y_cre
+        y_cre,
+        y_tess
     ))
 
     groups_pool = np.hstack((
         ["rav_" + g for g in g_rav],
-        ["cre_" + g for g in g_cre]
+        ["cre_" + g for g in g_cre],
+        ["tess_" + g for g in g_tess]
     ))
 
     # SPEAKER-INDEPENDENT SPLIT
