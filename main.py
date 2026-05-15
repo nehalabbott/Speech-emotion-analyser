@@ -363,7 +363,7 @@ def plot_confusion_matrix(
 
     plt.close()
 
-    print(f"Saved confusion matrix: {filename}")
+    print(f"Saved confusion matrix: {filename} \n")
 
 
 # =========================================================
@@ -390,11 +390,11 @@ def evaluate_model(
         average="macro"
     )
 
-    print(experiment_name)
+   # print(experiment_name)
 
     print(f"Accuracy : {accuracy:.4f}")
     print(f"Macro F1 : {macro_f1:.4f}")
-    print()
+   # print()
 
     plot_confusion_matrix(
         y_test,
@@ -565,7 +565,6 @@ print("Saving main model and scaler...")
 joblib.dump(model, "emotion_model.pkl")
 joblib.dump(scaler, "scaler.pkl")
 
-print("Saved successfully!\n")
 
 # TRAIN METRICS
 y_pred_train = model.predict(X_train)
@@ -593,13 +592,10 @@ evaluate_model(
     model,
     X_test,
     y_test,
-    "Mixed Dataset Speaker-Independent Split",
+    "(Mixed Dataset Speaker-Independent Split)",
     "cm_mixed.png"
 )
 
-# =========================================================
-# SAME DATASET EVALUATION
-# =========================================================
 def same_dataset_evaluation(
     X,
     y,
@@ -608,9 +604,7 @@ def same_dataset_evaluation(
     cm_filename
 ):
 
-    print("\n" + "="*60)
     print(f"{dataset_name} SAME-DATASET EVALUATION")
-    print("="*60)
 
     groups = np.array(groups)
 
@@ -653,15 +647,10 @@ def same_dataset_evaluation(
         y_pred_train
     )
 
-    train_f1 = f1_score(
-        y_train,
-        y_pred_train,
-        average="macro"
-    )
 
-    print("TRAIN RESULTS")
+    #print("TRAIN RESULTS")
     print(f"Train Accuracy : {train_acc:.4f}")
-    print(f"Train Macro F1 : {train_f1:.4f}")
+    #print(f"Train Macro F1 : {train_f1:.4f}")
     print()
 
     # TEST
@@ -683,15 +672,7 @@ def same_dataset_evaluation(
     print(f"Test Macro F1 : {test_f1:.4f}")
     print()
 
-    plot_confusion_matrix(
-        y_test,
-        y_pred_test,
-        f"{dataset_name} Same Dataset Split",
-        cm_filename
-    )
 
-
-print("\nSame Dataset Evaluation\n")
 
 same_dataset_evaluation(
     X_rav,
@@ -721,7 +702,7 @@ same_dataset_evaluation(
 # TASK 2
 # CROSS DATASET
 # =========================================================
-print("\nStarting Task 2: Cross Dataset Generalization\n")
+print("\nCross Dataset Generalization\n")
 
 experiments = [
 
@@ -762,9 +743,7 @@ for (
     cm_name
 ) in experiments:
 
-    print("\n" + "="*60)
     print(title)
-    print("="*60)
 
     scaler = StandardScaler()
 
