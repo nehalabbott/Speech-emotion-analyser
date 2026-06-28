@@ -4,6 +4,7 @@
 A machine learning application that predicts human emotions from **3-second speech recordings**. The model is trained using a combination of the **RAVDESS**, **CREMA-D**, and **TESS** speech emotion datasets, achieving robust performance across multiple speakers and recording conditions.
 
 ---
+Demo Link: https://drive.google.com/file/d/1xoYOVdeBGChwVEcvEDRr3tYl3sT0suHS/view?usp=sharing
 
 ## Features
 
