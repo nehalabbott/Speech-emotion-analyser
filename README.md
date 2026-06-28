@@ -32,15 +32,16 @@ Confusion matrices: https://drive.google.com/drive/folders/1zutNj9CWar6mKSaYF5yB
 
 ## 📂 Datasets
 
-The model is trained using the following publicly available datasets:
+The model was trained and evaluated on a combined corpus of **10,887 speech samples** collected from three widely used emotion recognition datasets:
 
-- **RAVDESS**
-- **CREMA-D**
-- **TESS**
+| Dataset | Samples |
+|---------|---------:|
+| RAVDESS | 1,056 |
+| CREMA-D | 7,442 |
+| TESS | 2,389 |
+| **Total** | **10,887** |
 
-These datasets provide diverse emotional speech samples from multiple speakers, improving the model's generalization.
-
----
+These datasets contain recordings from multiple speakers expressing emotions such as happy, sad, angry, fearful, disgust, neutral, and surprise, providing a diverse benchmark for emotion recognition.
 
 ## 📊 Feature Engineering
 
@@ -166,3 +167,40 @@ LinearSVC Model
       ▼
 Predicted Emotion
 ```
+## 📈 Results
+
+### Mixed-Dataset Evaluation
+
+The model was trained using the combined dataset of **10,887 audio samples** and evaluated on a held-out test split.
+
+| Metric | Score |
+|--------|------:|
+| Training Accuracy | **72.73%** |
+| Training Macro F1 | **72.64%** |
+| Test Accuracy | **57.97%** |
+| Test Macro F1 | **58.00%** |
+
+The balanced LinearSVC demonstrates reasonable generalization across multiple datasets despite differences in recording environments, speakers, and emotional expression styles.
+## 🔬 Pooling Method Comparison
+
+Different temporal pooling strategies were evaluated to convert variable-length audio features into fixed-length vectors.
+
+| Pooling Method | Accuracy | Macro F1 |
+|---------------|---------:|---------:|
+| Mean | 40.92% | 41.24% |
+| Max | 48.32% | 48.11% |
+| Standard Deviation | 51.41% | 51.33% |
+| **Mean + Standard Deviation** | **57.97%** | **58.00%** |
+
+The **Mean + Standard Deviation** pooling strategy achieved the best overall performance and was selected for the final model.
+## 🌍 Cross-Dataset Generalization
+
+To evaluate robustness across different datasets, the model was trained on two datasets and tested on the third.
+
+| Training Dataset(s) | Test Dataset | Accuracy | Macro F1 |
+|--------------------|-------------|---------:|---------:|
+| CREMA-D + TESS | RAVDESS | 29.45% | 22.21% |
+| RAVDESS + TESS | CREMA-D | 21.41% | 11.90% |
+| RAVDESS + CREMA-D | TESS | **59.77%** | **58.72%** |
+
+These experiments demonstrate the domain shift that exists between different speech emotion datasets, highlighting the challenges of building models that generalize across recording conditions and speaker populations.
